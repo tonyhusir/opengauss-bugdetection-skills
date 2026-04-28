@@ -1,7 +1,7 @@
 ---
 name: bug-detection-audit
-description: C/C++代码深度Bug审计。当前支持：二次释放（double-free）。支持按业务领域加载专项扩展。当用户要求审计C/C++代码、排查double-free或检查代码bug时自动触发。
-argument-hint: <代码目录> [doublefree|all] [domain=logical-decoding]
+description: C/C++代码深度Bug审计。当前支持：二次释放（double-free）、内存泄露（memory-leak）。支持按业务领域加载专项扩展。当用户要求审计C/C++代码、排查double-free、memory-leak或检查代码bug时自动触发。
+argument-hint: <代码目录> [doublefree|memoryleak|all] [domain=logical-decoding]
 ---
 
 # C/C++ 代码深度 Bug 审计
@@ -9,7 +9,7 @@ argument-hint: <代码目录> [doublefree|all] [domain=logical-decoding]
 ## 参数
 
 - `$ARG_0` 代码目录路径
-- `$ARG_1` 审计类型（默认 `all`）：`doublefree` / `all`
+- `$ARG_1` 审计类型（默认 `all`）：`doublefree` / `memoryleak` / `all`
 - `domain=<业务名>` 业务扩展（可选）：当前支持 `logical-decoding`
 
 ## 知识库加载（必须执行）
@@ -24,6 +24,7 @@ cat references/general-reference.md
 | 类型 | 文件 | 清单 |
 |------|------|------|
 | `doublefree` / `all` | `references/double-free-audit.md` | D1-D8 |
+| `memoryleak` / `all` | `references/memory-leak-audit.md` | L1-L10 |
 
 **Step 3** 若指定 `domain=<业务名>`，将 `<业务名>` 替换为实际参数值，执行：
 
@@ -39,6 +40,7 @@ cat references/domain-logical-decoding.md
 | 清单 | 扫描关键词 |
 |------|-----------|
 | D1-D8 | 分配：`palloc/palloc0/palloc_extended/repalloc/MemoryContextAlloc/malloc/calloc`<br>释放：`pfree/pfree_ext/free/CloseTransientFile/fclose`<br>控制流：`return/goto/break/PG_TRY/PG_CATCH/ereport` |
+| L1-L10 | 分配：`palloc/palloc0/palloc_extended/palloc0_noexcept/repalloc/MemoryContextAlloc/MemoryContextStrdup/pstrdup/pnstrdup/TextDatumGetCString/AllocSetContextCreate/malloc/calloc/strdup/new`<br>释放：`pfree/pfree_ext/MemoryContextReset/MemoryContextDelete/MemoryContextDeleteChildren/free/delete`<br>控制流：`return/goto/break/continue/PG_TRY/PG_CATCH/PG_RE_THROW/ereport/elog/ThrowErrorData/CHECK_FOR_INTERRUPTS` |
 
 **逐文件审计**：完整读取每个文件，对照已加载清单逐项检查，记录可疑点。
 
