@@ -1,0 +1,4 @@
+interface:
+  display_name: "Multi Commit Bug Skill Miner"
+  short_description: "批量串行提炼并验证 bug detector skill"
+  default_prompt: "Use $multi-commit-bug-skill-miner to process these bug-fix commits serially and validate detector skills cleanly."
