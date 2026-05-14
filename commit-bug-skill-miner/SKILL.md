@@ -40,6 +40,17 @@ pwd
 
 不得使用 `/tmp` 作为默认创建目录或验证目录。若当前路径不是期望的 agent 工作路径，先切换到当前 agent 的工作路径后再绑定。
 
+## 固化提示词
+
+本 skill 的固定提示词模板位于同目录 `prompts/` 下，执行到对应阶段时读取并渲染：
+
+- `prompts/existing_skill_validation.md`：验证已有 detector skill 是否能在修复前代码中独立发现同类 bug。
+- `prompts/skill_generation.md`：根据 bug dossier 生成泛化 detector skill。
+- `prompts/generated_skill_review.md`：由专门检视 agent 审查新生成 skill 的可检测性和泛化性。
+- `prompts/generated_skill_validation.md`：可选，用于将新生成 skill 的检测验证和泛化审查拆开执行。
+
+验证类提示词只能注入 `WORKTREE_PATH`、`DETECTOR_SKILL_PATH` 和 `OUTPUT_SCHEMA_PATH` 等执行必要变量。不得注入 commit id、diff、bug dossier、目标文件、目标函数、目标行号、预期答案或修复形态。每轮实际发送给验证 agent 的渲染后 prompt 必须保存到 `${AGENT_WORKDIR}/.commit-bug-skill-miner/runs/<run-id>/prompts/` 以便审计。
+
 ## 工作流程
 
 ### 0. 读取输入
@@ -168,7 +179,9 @@ ${AGENT_WORKDIR}/.commit-bug-skill-miner/generated-skills/<bug-class>/<detector-
 - `<detector-name>` 来自不变量类型或通用触发模式，例如 `error-path-cleanup-detector`、`lock-order-inversion-detector`、`state-cleanup-symmetry-detector`。
 - 创建前检查同类型目录下是否已有 detector；若已有 detector 可通过小幅泛化覆盖当前 bug，优先扩展该 detector；否则再创建新子目录。
 - 生成内容使用中文，至少包含 frontmatter、目标、适用信号、预扫描、审计清单、确认标准、误报排除、输出格式。
-- 该 skill 必须指导 agent 发现“同类问题”，而不是定位“这个 commit 曾修过的问题”；内容必须来自第 2 步的代码级不变量分析，而不是 commit message 摘要。
+- 该 skill 必须指导 agent 发现”同类问题”，而不是定位”这个 commit 曾修过的问题”；内容必须来自第 2 步的代码级不变量分析，而不是 commit message 摘要。
+- **去具体化要求**：skill 中所有搜索命令、示例、适用信号必须使用通用模式（如 `->\w+\s*=` 而非 `->user_name=`）和语义角色描述（如”执行身份标识”而非 `user_name`），不能包含 bug dossier 中的精确标识符。
+- **生成后自检**：skill 写完后，从 bug dossier 中提取所有具体标识符（变量名、结构体名、函数名），在 skill 文件中逐个搜索。命中任何一条必须改写为通用描述后才能进入验证。
 
 新 skill 生成后，必须按第 4 步用干净上下文和干净 prompt 验证。
 
